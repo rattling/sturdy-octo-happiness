@@ -1,0 +1,1 @@
+    Hi Ted, can you check for any pending orders from ElectroWorld? Please prioritize them and expedite shipping if possible.

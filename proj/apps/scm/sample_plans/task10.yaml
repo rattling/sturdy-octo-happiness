@@ -1,0 +1,9 @@
+task: fulfill_pending_orders
+steps:
+  - query: Orders, Inventory
+    filter:
+      status: Pending
+    logic:
+      allocate_inventory: true
+      schedule_production: if_inventory_insufficient
+    output: fulfillment_plan

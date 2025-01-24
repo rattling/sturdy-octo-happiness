@@ -1,0 +1,7 @@
+task: allocate_inventory
+steps:
+  - name: Allocate Inventory Workflow
+    type: action
+    function: allocate_inventory_workflow
+    output_var: allocation_result
+

@@ -1,0 +1,10 @@
+task: low_stock_components
+steps:
+  - name: Identify Low Stock Components
+    type: action
+    function: query_table
+    arguments:
+      table: Components
+      condition: "stock_quantity < 50"
+      output_fields: component_id, name, stock_quantity
+    output_var: low_stock_components

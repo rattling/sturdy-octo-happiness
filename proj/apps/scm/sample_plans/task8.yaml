@@ -1,0 +1,7 @@
+task: optimize_shipment_costs
+steps:
+  - query: ShippingOptions
+    filter:
+      destination: Los Angeles
+    order_by: cost ASC
+    output: best_option

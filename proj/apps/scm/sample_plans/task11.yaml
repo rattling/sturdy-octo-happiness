@@ -1,0 +1,37 @@
+task: increase_order_and_plan_fulfillment
+steps:
+  - create: new_order
+    fields:
+      customer_name: ElectroWorld
+      product_id: P001
+      quantity: 100
+  - query: Inventory
+    filter:
+      product_id: P001
+    logic:
+      allocate_inventory: true
+    output: allocated_quantity
+  - query: ProductionSchedule
+    filter:
+      product_id: P001
+      start_date: >= today
+    calculate:
+      production_shortfall: required_quantity - scheduled_quantity
+  - update: ProductionSchedule
+    fields:
+      start_date: today
+      end_date: today + 7
+      quantity: production_shortfall
+  - query: Components
+    filter:
+      product_id: P001
+    calculate:
+      components_shortfall: if_needed
+    output: shortfall_details
+  - generate_message:
+      customer: ElectroWorld
+      message_template: |
+        "Your order for 100 units of P001:
+         - {allocated_quantity} units will ship immediately.
+         - {scheduled_quantity} units will ship next week.
+         - {backlog_quantity} units are on backlog."

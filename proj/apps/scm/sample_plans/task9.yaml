@@ -1,0 +1,9 @@
+task: prioritize_shipments
+steps:
+  - query: Orders
+    filter:
+      customer_name: ElectroWorld
+      status: Pending
+    logic:
+      prioritize: true
+    output: prioritized_orders

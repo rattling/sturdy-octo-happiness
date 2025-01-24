@@ -1,0 +1,9 @@
+task: schedule_production
+steps:
+  - calculate: required_production
+    inputs: order_quantity, inventory_quantity
+  - update: ProductionSchedule
+    fields:
+      start_date: today
+      end_date: today + 7
+      quantity: required_production

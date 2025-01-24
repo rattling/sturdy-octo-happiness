@@ -1,0 +1,11 @@
+task: find_delayed_orders
+steps:
+  - name: Find Delayed Orders
+    type: action
+    function: query_table
+    arguments:
+      table: Orders
+      condition: "status = 'Pending' AND order_date < DATE('now', '-7 days')"
+      output_fields: order_id, customer_id, order_date
+    output_var: delayed_orders
+

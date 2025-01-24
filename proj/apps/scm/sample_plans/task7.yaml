@@ -1,0 +1,17 @@
+task: order_components
+steps:
+  - query: Components
+    filter:
+      component_id: C001
+    calculate:
+      shortfall: threshold - stock_quantity
+  - query: SupplierComponents
+    filter:
+      component_id: C001
+      available_quantity > 0
+    order_by: cost_per_unit
+    output: supplier_id, cost_per_unit
+  - create: supplier_order
+    fields:
+      component_id: C001
+      quantity: shortfall

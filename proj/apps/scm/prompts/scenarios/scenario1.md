@@ -1,0 +1,1 @@
+Hi Ted, can you check how many units of the Smart Home Hub (P001) we currently have in stock?

@@ -1,0 +1,23 @@
+task: expedite_orders
+steps:
+  - name: Get Customer ID
+    type: action
+    function: query_table
+    arguments:
+      table: Customers
+      condition: "name = 'ElectroWorld'"
+      output_fields: customer_id
+    output_var: customers
+
+  - name: Expedite Pending Orders
+    type: action
+    function: update_table
+    arguments:
+      table: Orders
+      condition: "customer_id = {customers.customer_id[0]} AND status = 'Pending'"
+      updates:
+        status: Expedited
+    output_var: expedited_rows
+
+
+

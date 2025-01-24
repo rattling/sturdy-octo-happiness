@@ -1,0 +1,41 @@
+task: Allocate stock to any pending orders
+steps:
+  - name: Fetch Pending Orders
+    function: customer_order.get_pending_orders
+    arguments: {}
+    output_var: pending_orders
+
+  - name: Process Each Order
+    loop:
+      variable: order
+      over: "{{pending_orders}}"
+    steps:
+      - name: Allocate Stock
+        function: inventory.allocate_stock
+        arguments:
+          order_id: "{{order['order_id']}}"
+        output_var: stock_allocation_results
+
+      - name: Allocate Prebooked Production
+        condition: any(item['remaining_quantity'] > 0 for item in stock_allocation_results)
+        steps:
+          - name: Allocate Prebooked Production
+            function: production.allocate_prebooked_production
+            arguments:
+              order_id: "{{order['order_id']}}"
+            output_var: production_allocation_results
+
+          - name: Schedule Production
+            condition: any(item['remaining_quantity'] > 0 for item in production_allocation_results)
+            steps:
+              - name: Schedule Production
+                function: production.schedule_production
+                arguments:
+                  order_id: "{{order['order_id']}}"
+                output_var: production_schedule_results
+
+  - name: Send Notification
+    function: message.write_message
+    arguments:
+      message: "Yay!"
+    output_var: notification_result
