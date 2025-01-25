@@ -24,14 +24,14 @@ The steps field contains the ordered list of actions to perform. Each step is a 
 
 - name: A descriptive name for the step.
 - function: The function to execute. Must match one of the functions described in the step descriptions.
-- arguments: A dictionary of arguments to pass to the function. These can include variables from the context (e.g., {{variable_name}}).
+- arguments: A dictionary of arguments to pass to the function. These can include variables from the context (e.g., {variable_name}).
 - output_var: (Optional) The name of the variable in the DSL context to store the function's output.
 
 ## Loops
 If a step involves iterating over a collection, use the loop field:
 
 - variable: The loop variable (e.g., order).
-- over: The collection to iterate over, referenced using the context (e.g., {{pending_orders}}).
+- over: The collection to iterate over, referenced using the context (e.g., {pending_orders}).
 
 Within a loop, include nested steps to process each item in the collection.
 
@@ -40,12 +40,12 @@ Example:
 - name: Process Each Order
   loop:
     variable: order
-    over: "{{pending_orders}}"
+    over: "{pending_orders}"
   steps:
     - name: Allocate Stock
       function: inventory.allocate_stock
       arguments:
-        order_id: "{{order['order_id']}}"
+        order_id: "{order['order_id']}"
       output_var: stock_allocation_results
 ```
 
@@ -64,7 +64,7 @@ Example:
     - name: Allocate Prebooked Production
       function: production.allocate_prebooked_production
       arguments:
-        order_id: "{{order['order_id']}}"
+        order_id: "{order['order_id']}"
       output_var: production_allocation_results
 ```
 
@@ -72,11 +72,11 @@ Example:
 Each step can produce an output stored in a context variable using the output_var field. These variables can then be referenced in subsequent steps to pass data or evaluate conditions.
 
 ## Referencing Variables
-Use double curly braces ({{variable_name}}) to reference context variables. Nested variables from loop iterations can be accessed as {{loop_variable['key']}}.
+Use double curly braces {variable_name} to reference context variables. Nested variables from loop iterations can be accessed as {loop_variable['key']}.
 
 ```yaml
 arguments:
-  order_id: "{{order['order_id']}}"
+  order_id: "{order['order_id']}"
 ```
 ### Key Considerations for Context
 Each variable must have a unique name within the task to avoid conflicts.
@@ -127,12 +127,12 @@ steps:
   - name: Process Each Order
     loop:
       variable: order
-      over: "{{pending_orders}}"
+      over: "{pending_orders}"
     steps:
       - name: Allocate Stock
         function: inventory.allocate_stock
         arguments:
-          order_id: "{{order['order_id']}}"
+          order_id: "{order['order_id']}"
         output_var: stock_allocation_results
 
       - name: Allocate Prebooked Production
@@ -141,7 +141,7 @@ steps:
           - name: Allocate Prebooked Production
             function: production.allocate_prebooked_production
             arguments:
-              order_id: "{{order['order_id']}}"
+              order_id: "{order['order_id']}"
             output_var: production_allocation_results
 
           - name: Schedule Production
@@ -150,7 +150,7 @@ steps:
               - name: Schedule Production
                 function: production.schedule_production
                 arguments:
-                  order_id: "{{order['order_id']}}"
+                  order_id: "{order['order_id']}"
                 output_var: production_schedule_results
 
   - name: Send Notification
