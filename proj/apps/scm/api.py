@@ -28,6 +28,7 @@ class Customer:
 
         Returns:
             dict: Customer details including name, address, and contact information.
+            Examp
 
         DSL Example:
         ```

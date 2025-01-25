@@ -1,19 +1,25 @@
-task: Allocate stock to any pending orders
+task: Allocate items to pending orders
 steps:
   - name: Fetch Pending Orders
     function: customer_order.get_pending_orders
     arguments: {}
     output_var: pending_orders
 
+  - name: Notify Pending Orders Count
+    function: message.write_message
+    arguments:
+      message: "There are {len(pending_orders)} pending orders to process."
+    output_var: pending_orders_notification
+
   - name: Process Each Order
     loop:
       variable: order
-      over: "{{pending_orders}}"
+      over: "{pending_orders}"
     steps:
       - name: Allocate Stock
         function: inventory.allocate_stock
         arguments:
-          order_id: "{{order['order_id']}}"
+          order_id: "{order['order_id']}"
         output_var: stock_allocation_results
 
       - name: Allocate Prebooked Production
@@ -22,7 +28,7 @@ steps:
           - name: Allocate Prebooked Production
             function: production.allocate_prebooked_production
             arguments:
-              order_id: "{{order['order_id']}}"
+              order_id: "{order['order_id']}"
             output_var: production_allocation_results
 
           - name: Schedule Production
@@ -31,11 +37,11 @@ steps:
               - name: Schedule Production
                 function: production.schedule_production
                 arguments:
-                  order_id: "{{order['order_id']}}"
+                  order_id: "{order['order_id']}"
                 output_var: production_schedule_results
 
   - name: Send Notification
     function: message.write_message
     arguments:
-      message: "Yay!"
+      message: "We have expedited fulfillment for all pending orders"
     output_var: notification_result

@@ -42,13 +42,13 @@ def get_scenario_dir(app_name):
 
 def get_scenario_file(app_name, scenario_number):
     """
-    Constructs a path to a specific scenario YAML file.
+    Constructs a path to a specific scenario markdown file.
     :param app_name: The name of the app (e.g., 'scm', 'franchise').
     :param scenario_number: The number of the scenario.
     :return: Absolute path as a string.
     """
     return os.path.join(
-        get_scenario_dir(app_name), f"scenario{scenario_number}.yaml"
+        get_scenario_dir(app_name), f"scenario{scenario_number}.md"
     )
 
 

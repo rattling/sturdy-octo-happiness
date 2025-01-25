@@ -4,11 +4,10 @@ import importlib
 import inspect
 import logging
 import traceback
+import re
 
 from proj.config.logging_config import setup_logging
 from proj.utils.path_helpers import get_db_file
-import proj.dsl.dsl_steps as dsl_steps
-
 
 setup_logging()
 
@@ -34,51 +33,64 @@ class DSLExecutor:
 
         Args:
             loop_variable (str): The variable name to assign in the loop.
-            loop_over (list or range): The iterable to loop over.
+            loop_over (str): The string representation of the iterable (e.g., "{pending_orders}").
             steps (list): Nested steps to execute for each iteration.
 
         Returns:
             None
         """
-        # Check if `loop_over` resolves to a valid list
-        if not isinstance(loop_over, (list, range)):
-            logging.error(
-                f"Loop variable '{loop_variable}' cannot iterate over unresolved or invalid value: {loop_over}"
-            )
-            return
+        # Resolve placeholders in `loop_over`
+        resolved_loop_over = self._resolve_placeholders(loop_over)
 
         try:
-            for item in loop_over:
-                self.dsl_context[loop_variable] = item
-                logging.info(f"Loop iteration with {loop_variable} = {item}")
-                for step in steps:
-                    self._execute_step(step)
-        except Exception as e:
-            logging.error(f"Error executing loop over '{loop_over}': {e}")
+            # Ensure the resolved `loop_over` is iterable
+            resolved_iterable = eval(resolved_loop_over, {}, self.dsl_context)
 
-    def _execute_condition(self, condition, steps):
+            if not isinstance(resolved_iterable, (list, range)):
+                raise ValueError(
+                    f"Resolved value is not iterable: {resolved_iterable}"
+                )
+
+            for item in resolved_iterable:
+                # Create a combined context with the loop variable
+                loop_context = {**self.dsl_context, loop_variable: item}
+                logging.info(f"Loop iteration with {loop_variable} = {item}")
+
+                for step in steps:
+                    # Pass the updated context with the loop variable to each nested step
+                    self._execute_step(step, additional_context=loop_context)
+        except Exception as e:
+            logging.error(
+                f"Loop variable '{loop_variable}' cannot iterate over unresolved or invalid value: {resolved_loop_over}. Error: {e}"
+            )
+
+    def _execute_condition(self, condition, steps, additional_context=None):
         """
         Evaluates a condition and executes nested steps if the condition is true.
 
         Args:
             condition (str): A Python expression to evaluate.
             steps (list): A list of nested steps to execute if the condition is true.
+            additional_context (dict, optional): Additional context for resolving placeholders.
 
         Returns:
             None
         """
-        try:
-            condition_result = eval(condition, {}, self.dsl_context)
-            if condition_result:
-                logging.info(f"Condition '{condition}' evaluated to True.")
-                for step in steps:
-                    self._execute_step(step)
-            else:
-                logging.info(f"Condition '{condition}' evaluated to False.")
-        except Exception as e:
-            logging.error(f"Error evaluating condition '{condition}': {e}")
+        # Merge global context and additional context
+        context = {**self.dsl_context, **(additional_context or {})}
 
-    def _execute_step(self, step):
+        resolved_condition = self._resolve_condition(condition, context)
+
+        if (
+            resolved_condition
+        ):  # Only execute steps if the condition resolves to True
+            logging.info(f"Condition '{condition}' evaluated to True.")
+            for step in steps:
+                self._execute_step(step, additional_context=context)
+        else:
+            logging.info(f"Condition '{condition}' evaluated to False.")
+
+    def _execute_step(self, step, additional_context=None):
         """
         Executes a single DSL step.
 
@@ -88,6 +100,7 @@ class DSLExecutor:
                 - function: The function to execute (e.g., 'product.get_products').
                 - arguments: A dictionary of arguments to pass to the function.
                 - output_var: The variable to store the result in the DSL context.
+            additional_context (dict, optional): Additional context for resolving placeholders (e.g., loop variables).
 
         Returns:
             None
@@ -97,7 +110,7 @@ class DSLExecutor:
         loop = step.get("loop")
         if loop:
             loop_variable = loop.get("variable")
-            loop_over = self._resolve_arguments(loop.get("over"))
+            loop_over = loop.get("over")
             nested_steps = step.get("steps", [])
             self._execute_loop(loop_variable, loop_over, nested_steps)
             return
@@ -106,7 +119,14 @@ class DSLExecutor:
         condition = step.get("condition")
         if condition:
             nested_steps = step.get("steps", [])
-            self._execute_condition(condition, nested_steps)
+            condition_resolved = self._resolve_arguments(
+                condition, additional_context=additional_context
+            )
+            self._execute_condition(
+                condition_resolved,
+                nested_steps,
+                additional_context=additional_context,
+            )
             return
 
         step_name = step.get("name", "Unnamed Step")
@@ -126,8 +146,8 @@ class DSLExecutor:
 
         func = func_metadata["function"]  # Extract the actual function
 
-        # Resolve arguments
-        resolved_args = self._resolve_arguments(args)
+        # Resolve arguments with additional context
+        resolved_args = self._resolve_arguments(args, additional_context)
 
         try:
             # Call the function
@@ -251,20 +271,25 @@ class DSLExecutor:
             )
             logging.debug(traceback.format_exc())
 
-    def _resolve_arguments(self, args):
+    def _resolve_arguments(self, args, additional_context=None):
         """
         Resolves arguments, supporting strings, nested dictionaries, and lists.
 
         Args:
             args (Any): The arguments to resolve. Can be a string, dictionary, or list.
+            additional_context (dict, optional): Additional context to use for resolving placeholders,
+                                                such as loop-specific variables.
 
         Returns:
             Any: Resolved arguments with placeholders replaced by their values.
         """
+        # Merge global context and additional context if provided
+        context = {**self.dsl_context, **(additional_context or {})}
 
         def resolve(value):
             if isinstance(value, str) and "{" in value and "}" in value:
-                return self._resolve_placeholders(value)
+                # Resolve placeholders using the merged context
+                return self._resolve_placeholders(value, context)
             elif isinstance(value, list):
                 return [resolve(v) for v in value]
             elif isinstance(value, dict):
@@ -274,32 +299,102 @@ class DSLExecutor:
 
         # Handle the case where args itself is a string
         if isinstance(args, str):
-            return self._resolve_placeholders(args)
+            return self._resolve_placeholders(args, context)
 
         # Handle cases where args is a dictionary or other iterable
         return {key: resolve(value) for key, value in args.items()}
 
-    def _resolve_placeholders(self, text):
+    def _resolve_placeholders(self, text, context=None):
         """
-        Resolves placeholders within a string using the DSL context.
+        Resolves placeholders within a string using the provided context.
 
         Args:
-            text (str): String containing placeholders (e.g., '{{var_name}}').
+            text (str): String containing placeholders (e.g., '{pending_orders[0]}' or '{len(pending_orders)}').
+            context (dict, optional): A dictionary to use for resolving placeholders. Defaults to self.dsl_context.
 
         Returns:
-            str: Resolved string or a warning about unresolved variables.
+            str: Resolved string with evaluated placeholders.
         """
+        # Use the provided context or fallback to the DSL context
+        context = context or self.dsl_context
+
+        # Define a regex pattern to match placeholders enclosed in curly braces
+        pattern = r"\{([^\}]+)\}"
+
+        # Define a safe evaluation environment
+        safe_globals = {
+            "datetime": __import__(
+                "datetime"
+            ).datetime,  # Import the `datetime.datetime` class
+            "timedelta": __import__(
+                "datetime"
+            ).timedelta,  # Import `timedelta` if needed
+            "abs": abs,  # Add built-in functions as needed
+        }
+
+        def resolve_match(match):
+            expression = match.group(
+                1
+            )  # Extract the expression inside the curly braces
+            logging.debug(f"Attempting to resolve expression: {expression}")
+            try:
+                # Evaluate the expression in the safe environment with the given context
+                value = eval(expression, safe_globals, context)
+                logging.debug(f"Resolved '{expression}' to '{value}'")
+                return str(value)  # Convert the result to a string
+            except KeyError as e:
+                logging.error(
+                    f"Key error resolving placeholder '{expression}': {e}",
+                    exc_info=True,
+                )
+                return f"<Unresolved {expression}>"
+            except Exception as e:
+                logging.error(
+                    f"Error resolving placeholder '{expression}': {e}",
+                    exc_info=True,
+                )
+                return f"<Error resolving {expression}>"
+
         try:
-            return eval(text.strip("{}"), {}, self.dsl_context)
-        except KeyError as e:
-            logging.error(
-                f"Failed to resolve '{text}' in context. Missing variable: {e}",
-                exc_info=True,
-            )
-            return f"<Unresolved {text}>"
+            # Use regex to find and resolve all placeholders in the string
+            resolved_text = re.sub(pattern, resolve_match, text)
+            logging.debug(f"Resolved text: {resolved_text}")
+            return resolved_text
         except Exception as e:
             logging.error(
-                f"Error resolving placeholders in '{text}': {e}",
+                f"Unexpected error resolving placeholders in '{text}': {e}",
                 exc_info=True,
             )
             return f"<Error resolving {text}>"
+
+    def _resolve_condition(self, condition, context=None):
+        """
+        Resolves and evaluates a condition expression using the given context.
+
+        Args:
+            condition (str): The condition expression to evaluate (e.g., 'len(pending_orders) > 0').
+            context (dict, optional): A dictionary to use for resolving the condition. Defaults to self.dsl_context.
+
+        Returns:
+            bool: The result of the evaluated condition (True or False).
+        """
+        # Use the provided context or fallback to the DSL context
+        context = context or self.dsl_context
+
+        logging.debug(f"Attempting to resolve condition: {condition}")
+        try:
+            # Evaluate the condition expression in the provided context
+            result = eval(condition, {}, context)
+            logging.debug(f"Condition '{condition}' resolved to: {result}")
+            return bool(result)
+        except KeyError as e:
+            logging.error(
+                f"Key error resolving condition '{condition}': {e}",
+                exc_info=True,
+            )
+            return False  # Treat unresolved keys as a false condition
+        except Exception as e:
+            logging.error(
+                f"Error resolving condition '{condition}': {e}", exc_info=True
+            )
+            return False  # Treat any other errors as a false condition

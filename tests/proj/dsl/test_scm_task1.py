@@ -73,7 +73,10 @@ def test_multistep_task(dsl_executor, sample_task_yaml):
                 "status": "Scheduled",
             },
         ],
-        "notification_result": {"status": "success", "message": "Yay!"},
+        "notification_result": {
+            "status": "success",
+            "message": "We have expedited fulfillment for all pending orders",
+        },
     }
 
     for key, expected_value in expected_outputs.items():
