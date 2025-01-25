@@ -378,13 +378,20 @@ class DSLExecutor:
         Returns:
             bool: The result of the evaluated condition (True or False).
         """
-        # Use the provided context or fallback to the DSL context
         context = context or self.dsl_context
+
+        # 1) Create a safe environment with datetime, timedelta, etc.
+        safe_globals = {
+            "datetime": __import__("datetime").datetime,
+            "timedelta": __import__("datetime").timedelta,
+            "abs": abs,
+            # Add other built-ins or imports if we need them
+        }
 
         logging.debug(f"Attempting to resolve condition: {condition}")
         try:
-            # Evaluate the condition expression in the provided context
-            result = eval(condition, {}, context)
+            # 2) Evaluate the condition using safe_globals (instead of {})
+            result = eval(condition, safe_globals, context)
             logging.debug(f"Condition '{condition}' resolved to: {result}")
             return bool(result)
         except KeyError as e:
@@ -392,9 +399,9 @@ class DSLExecutor:
                 f"Key error resolving condition '{condition}': {e}",
                 exc_info=True,
             )
-            return False  # Treat unresolved keys as a false condition
+            return False
         except Exception as e:
             logging.error(
                 f"Error resolving condition '{condition}': {e}", exc_info=True
             )
-            return False  # Treat any other errors as a false condition
+            return False

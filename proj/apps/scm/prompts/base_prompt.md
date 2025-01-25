@@ -72,7 +72,7 @@ Example:
 Each step can produce an output stored in a context variable using the output_var field. These variables can then be referenced in subsequent steps to pass data or evaluate conditions.
 
 ## Referencing Variables
-Use double curly braces {variable_name} to reference context variables. Nested variables from loop iterations can be accessed as {loop_variable['key']}.
+Use curly braces {variable_name} to reference context variables. Nested variables from loop iterations can be accessed as {loop_variable['key']}.
 
 ```yaml
 arguments:
@@ -88,6 +88,12 @@ You can use Python expressions for:
 - Conditions (e.g., any(item['remaining_quantity'] > 0 for item in stock_allocation_results)).
 - Arguments to derive values dynamically (e.g., order['order_id']).
 - These expressions must be concise and valid Python syntax.
+
+### Available Functions:
+
+- datetime: Use datetime.now() to get the current date and time.
+- timedelta: Use for date/time calculations (e.g., timedelta(days=7)).
+- abs: Use abs() for calculating the absolute value of a number.
 
 ## Bringing It Together
 When creating a DSL plan, ensure:

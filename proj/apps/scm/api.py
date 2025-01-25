@@ -28,7 +28,20 @@ class Customer:
 
         Returns:
             dict: Customer details including name, address, and contact information.
-            Examp
+            Example
+            [
+                {
+                    "name": "John Doe",
+                    "address": 78 Laurels,
+                    "contact_info": "johndoe@gmail.com,
+                },
+                {
+                    "name": "Sebastian Tremmels",
+                    "address": 90 Canyons,
+                    "contact_info": "seb@gmail.com,
+                },
+            ]
+
 
         DSL Example:
         ```
@@ -65,6 +78,21 @@ class Product:
 
         Returns:
         list[dict]: A list of products with details.
+        Example:
+        [
+
+            {
+                "product_id": "P001",
+                "name": "Product 1",
+                "price": 100,
+            },
+            {
+                "product_id": "P002",
+                "name": "Product 2",
+                "price": 200,
+            },
+        ]
+
 
         DSL Example:
         ```
@@ -94,6 +122,19 @@ class CustomerOrder:
 
         Returns:
             dict: Partial allocation details.
+            Example:
+            [
+
+                {
+                    "product_id": "P001",
+                    "requested_quantity": 10,
+                    "stock_quantity": 10,
+                },
+                {
+                    "product_id": "P002",
+                    "requested_quantity": 5,
+                    "stock_quantity": 3,
+                },
 
         DSL Example:
         ```
@@ -106,7 +147,7 @@ class CustomerOrder:
         """
         self.cursor.execute(
             """
-            SELECT od.product_id, od.quantity, i.stock_quantity
+            SELECT od.product_id, od.quantity as requested_quantity, i.stock_quantity
             FROM OrderDetails od
             LEFT JOIN Inventory i ON od.product_id = i.product_id
             WHERE od.order_id = ?
@@ -145,6 +186,11 @@ class CustomerOrder:
 
         Returns:
             str: Status of the order.
+            Example
+            Pending
+            or
+            Shipped
+
 
         DSL Example:
         ```
@@ -170,6 +216,19 @@ class CustomerOrder:
 
         Returns:
             list[dict]: List of pending orders.
+            Example:
+            [
+                {
+                    "order_id": "O001",
+                    "order_date": "2025-01-01",
+                    "status": "Pending",
+                },
+                {
+                    "order_id": "O003",
+                    "order_date": "2025-01-03",
+                    "status": "Pending",
+                },
+            ]
 
         DSL Example:
         ```
@@ -296,8 +355,24 @@ class CustomerOrder:
             order_id (str): The ID of the order to retrieve details for.
 
         Returns:
-            list[dict]: A list of order details, including product ID, requested quantity,
-                        allocated quantity, and remaining quantity.
+            list[dict]:
+            Example:
+            [
+                {
+                    "product_id": "P001",
+                    "quantity": 10,
+                    "allocated_quantity": 5,
+                    "remaining_quantity": 5,
+                    "order_date": "2025-01-01",
+                },
+                {
+                    "product_id": "P002",
+                    "quantity": 3,
+                    "allocated_quantity": 0,
+                    "remaining_quantity": 3,
+                    "order_date": "2025-01-01",
+                },
+            ]
 
         DSL Example:
         ```
@@ -310,7 +385,8 @@ class CustomerOrder:
         """
         self.cursor.execute(
             """
-            SELECT od.product_id, od.quantity, od.allocated_quantity, od.remaining_quantity
+            SELECT od.product_id, od.quantity, od.allocated_quantity, od.remaining_quantity,
+            od.order_date
             FROM OrderDetails od
             WHERE od.order_id = ?
             """,
@@ -323,6 +399,7 @@ class CustomerOrder:
                 "quantity": row[1],
                 "allocated_quantity": row[2],
                 "remaining_quantity": row[3],
+                "order_date": row[4],
             }
             for row in rows
         ]
@@ -358,7 +435,7 @@ class Inventory:
         result = self.cursor.fetchone()
         return result[0] if result else 0
 
-    def allocate_stock(self, order_id: str) -> dict:
+    def allocate_stock(self, order_id: str) -> list[dict]:
         """
         Allocates available stock for a given order.
 
@@ -366,7 +443,7 @@ class Inventory:
             order_id (str): The ID of the order to allocate stock.
 
         Returns:
-            dict:
+            list[dict]:
             Example:
             [
                 {
@@ -494,6 +571,25 @@ class Production:
 
         Returns:
             list[dict]: A list of newly created production schedule records.
+            Example:
+            [
+                {
+                    "schedule_id": "PS_O001_P001_20250102",
+                    "product_id": "P001",
+                    "start_date": "2025-01-02",
+                    "end_date": "2025-01-02",
+                    "quantity": 10,
+                    "status": "Scheduled",
+                },
+                {
+                    "schedule_id": "PS_O001_P002_20250102",
+                    "product_id": "P002",
+                    "start_date": "2025-01-02",
+                    "end_date": "2025-01-02",
+                    "quantity": 5,
+                    "status": "Scheduled",
+                },
+            ]
 
         DSL Example:
         ```
@@ -590,6 +686,24 @@ class Production:
 
         Returns:
             list[dict]: A list of backlogged production items.
+            Example:
+            [
+                {
+                    "schedule_id": "PS_O001_P001_20250102",
+                    "product_id": "P001",
+                    "start_date": "2025-01-02",
+                    "end_date": "2025-01-02",
+                    "quantity": 10,
+                    "status": "Backlogged",
+                },
+                {
+                    "schedule_id": "PS_O001_P002_20250102",
+                    "product_id": "P002",
+                    "start_date": "2025-01-02",
+                    "end_date": "2025-01-02",
+                    "quantity": 5,
+                    "status": "Backlogged",
+                },
 
         DSL Example:
         ```
@@ -779,6 +893,23 @@ class Shipping:
 
         Returns:
             list[dict]: Available shipping options.
+            Example:
+            [
+                {
+                    "shipping_option_id": "SO001",
+                    "carrier_id": "C001",
+                    "service_level": "Standard",
+                    "cost": 10,
+                    "estimated_days": 5,
+                },
+                {
+                    "shipping_option_id": "SO002",
+                    "carrier_id": "C002",
+                    "service_level": "Express",
+                    "cost": 20,
+                    "estimated_days": 2,
+                },
+            ]
 
         DSL Example:
         ```
@@ -820,6 +951,12 @@ class Shipping:
 
         Returns:
             dict: Shipment confirmation details.
+            Example:
+            {
+                "shipment_id": "SHIP_O001",
+                "tracking_number": "TRACK_O001",
+            }
+
 
         DSL Example:
         ```
@@ -865,6 +1002,13 @@ class Shipping:
 
         Returns:
             dict: Current shipment details.
+            Example:
+            {
+                "shipment_id": "SHIP_O001",
+                "order_id": "O001",
+                "shipping_option_id": "SO001",
+                "shipped_date": "2025-01-01",
+            }
 
         DSL Example:
         ```
@@ -906,7 +1050,19 @@ class Component:
             product_id (str): The ID of the product to check inventory for.
 
         Returns:
-            list(dict): A dictionary with component availability and required quantities.
+            list(dict):
+            Example:
+            [
+                {
+                    "component_id": "C001",
+                    "required_quantity": 10,
+                    "available_quantity": 5,
+                },
+                {
+                    "component_id": "C002",
+                    "required_quantity": 5,
+                    "available_quantity": 3,
+                },
 
         DSL Example:
         ```
@@ -945,7 +1101,19 @@ class Component:
             quantity (int): The number of units to produce.
 
         Returns:
-            dict: Details of reserved components, including any shortfalls.
+            dict:
+            Example:
+            [
+                {
+                    "component_id": "C001",
+                    "reserved_quantity": 10,
+                    "shortfall": 0,
+                },
+                {
+                    "component_id": "C002",
+                    "reserved_quantity": 3,
+                    "shortfall": 2,
+                },
 
         DSL Example:
         ```
@@ -1013,7 +1181,19 @@ class Component:
             supplier_id (str): The ID of the supplier.
 
         Returns:
-            list[dict]: A list of components with quantity and cost information.
+            list[dict]:
+            Example:
+            [
+                {
+                    "component_id": "C001",
+                    "available_quantity": 100,
+                    "cost_per_unit": 10,
+                },
+                {
+                    "component_id": "C002",
+                    "available_quantity": 50,
+                    "cost_per_unit": 20,
+                },
 
         DSL Example:
         ```
@@ -1054,7 +1234,14 @@ class Component:
             quantity (int): The quantity to order.
 
         Returns:
-            dict: Order confirmation details, including cost.
+            dict:
+            Example:
+            {
+                "status": "Success",
+                "supplier_id": "S001",
+                "component_id": "C001",
+                "quantity_ordered": 100,
+                "total_cost": 1000,
 
         DSL Example:
         ```
@@ -1104,7 +1291,19 @@ class Report:
             threshold (int): The stock level threshold.
 
         Returns:
-            list[dict]: A list of components below the threshold, with stock details.
+            list[dict]:
+            Example:
+            [
+                {
+                    "component_id": "C001",
+                    "name": "Component A",
+                    "stock_quantity": 20,
+                },
+                {
+                    "component_id": "C002",
+                    "name": "Component B",
+                    "stock_quantity": 30,
+                },
 
         DSL Example:
         ```
@@ -1140,7 +1339,25 @@ class Report:
             end_date (str): End date of the report (inclusive).
 
         Returns:
-            list[dict]: A list of production schedule details.
+            list[dict]:
+            Example:
+            [
+                {
+                    "schedule_id": "PS_O001_P001_20250102",
+                    "product_id": "P001",
+                    "start_date": "2025-01-02",
+                    "end_date": "2025-01-02",
+                    "quantity": 10,
+                    "status": "Scheduled",
+                },
+                {
+                    "schedule_id": "PS_O001_P002_20250102",
+                    "product_id": "P002",
+                    "start_date": "2025-01-02",
+                    "end_date": "2025-01-02",
+                    "quantity": 5,
+                    "status": "Scheduled",
+                },
 
         DSL Example:
         ```
@@ -1184,7 +1401,20 @@ class Report:
             customer_id (str, optional): The customer ID to filter orders for.
 
         Returns:
-            list[dict]: A list of order details matching the filters.
+            list[dict]:
+            Example:
+            [
+                {
+                    "order_id": "O001",
+                    "customer_id": "C001",
+                    "order_date": "2025-01-01",
+                    "status": "Pending",
+                },
+                {
+                    "order_id": "O003",
+                    "customer_id": "C001",
+                    "order_date": "2025-01-03",
+                    "status": "Pending",
 
         DSL Example:
         ```
@@ -1221,7 +1451,52 @@ class Report:
         Generates a summary report of current stock levels, pending orders, and production schedules.
 
         Returns:
-            dict: Summary of inventory, pending orders, and production schedule details.
+            dict:
+            Example:
+            {
+                "inventory": [
+                    {
+                        "product_id": "P001",
+                        "stock_quantity": 100,
+                    },
+                    {
+                        "product_id": "P002",
+                        "stock_quantity": 50,
+                    },
+                ],
+                "pending_orders": [
+                    {
+                        "order_id": "O001",
+                        "customer_id": "C001",
+                        "order_date": "2025-01-01",
+                        "status": "Pending",
+                    },
+                    {
+                        "order_id": "O003",
+                        "customer_id": "C001",
+                        "order_date": "2025-01-03",
+                        "status": "Pending",
+                    },
+                ],
+                "production_schedule": [
+                    {
+                        "schedule_id": "PS_O001_P001_20250102",
+                        "product_id": "P001",
+                        "start_date": "2025-01-02",
+                        "end_date": "2025-01-02",
+                        "quantity": 10,
+                        "status": "Scheduled",
+                    },
+                    {
+                        "schedule_id": "PS_O001_P002_20250102",
+                        "product_id": "P002",
+                        "start_date": "2025-01-02",
+                        "end_date": "2025-01-02",
+                        "quantity": 5,
+                        "status": "Scheduled",
+                    },
+                ],
+            }
 
         DSL Example:
         ```
