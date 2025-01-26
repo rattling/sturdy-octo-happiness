@@ -66,7 +66,8 @@ touch apps/new_app/__init__.py
 
 # Developer Notes
 
-Archive folder contains some old code that may not run but keeping temporarily for reference..
+- Archive folder contains some old code that may not run but keeping temporarily for reference..
+- See base_prompt_resolved.md for latest prompt with injections for function docstrings etc.
 
 ---
 
