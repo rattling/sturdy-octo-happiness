@@ -209,6 +209,13 @@ class DSLExecutor:
                         attr, predicate=inspect.ismethod
                     )
                     for method_name, method in methods:
+                        # if the method is a private method or an init method, skip it
+                        if (
+                            method_name.startswith("_")
+                            or method_name == "init"
+                        ):
+                            continue
+
                         key = f"{attr_name.lower()}.{method_name}"
                         registry[key] = {"function": method, "source": "core"}
                         logging.info(f"Registered core function: {key}")
@@ -260,6 +267,12 @@ class DSLExecutor:
                     )
                     for method_name, method in methods:
                         key = f"{attr_name.lower()}.{method_name}"
+                        # if the method is a private method or an init method, skip it
+                        if (
+                            method_name.startswith("_")
+                            or method_name == "init"
+                        ):
+                            continue
                         registry[key] = {"function": method, "source": "app"}
                         logging.info(
                             f"Registered app-specific function: {key}"

@@ -89,8 +89,7 @@ You can use Python expressions for:
 - Arguments to derive values dynamically (e.g., order['order_id']).
 - These expressions must be concise and valid Python syntax.
 
-### Available Functions:
-
+The following Python functions can be used within expressions and only in expressions:
 - datetime: Use datetime.now() to get the current date and time.
 - timedelta: Use for date/time calculations (e.g., timedelta(days=7)).
 - abs: Use abs() for calculating the absolute value of a number.

@@ -92,6 +92,10 @@ class Orchestrator:
         for placeholder, replacement in replacements.items():
             base_prompt = base_prompt.replace(placeholder, replacement)
 
+        # save the promt back to a file in save dir as base_prompt_resolved.md
+        with open(f"{self.prompt_dir}/base_prompt_resolved.md", "w") as f:
+            f.write(base_prompt)
+
         return base_prompt
 
     def describe_functions(self, step_registry):

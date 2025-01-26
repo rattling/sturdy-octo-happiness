@@ -386,8 +386,10 @@ class CustomerOrder:
         self.cursor.execute(
             """
             SELECT od.product_id, od.quantity, od.allocated_quantity, od.remaining_quantity,
-            od.order_date
+            o.order_date
             FROM OrderDetails od
+            LEFT JOIN Orders o
+            on od.order_id = o.order_id
             WHERE od.order_id = ?
             """,
             (order_id,),
