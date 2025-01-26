@@ -54,18 +54,21 @@ pytest
 
 # Create a New App
 
-<UNDER HEAVY CONSTRUCTION>
+**UNDER HEAVY CONSTRUCTION**
 
 To create a new app, create a new folder in the apps folder and add a __init__.py file. This will be the entry point for the app.
 
 ```bash
 mkdir apps/new_app
 touch apps/new_app/__init__.py
+```
 ---
 
 # Developer Notes
 
 Archive folder contains some old code that may not run but keeping temporarily for reference..
+
+---
 
 
 # Dicussion and Future Work
