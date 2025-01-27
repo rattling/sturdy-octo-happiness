@@ -38,9 +38,9 @@ Copy env.example to .env and fill in the values for your LLM keys etc.
 
 # Usage
 ```bash
-python scripts/run_with_api.py # Run a task with the scm app using it's native python API
-python scripts/run_with_dsl.py # Run a task with the app against a pre-baked DSL task
-python scripts/run_with_llm.py # Run the task against an English scenario prompt provided to an LLM. Choose a scenario 1 to 5.
+python proj/scripts/run_with_api.py # Run a task with the scm app using it's native python API
+python proj/scripts/run_with_dsl.py # Run a task with the app against a pre-baked DSL task
+python proj/scripts/run_with_llm.py # Run the task against an English scenario prompt provided to an LLM. Choose a scenario 1 to 5.
 ```
 
 Add your own scenarios to the scenarios folder as scenario_6.md etc. and test them with run_with_llm.py
