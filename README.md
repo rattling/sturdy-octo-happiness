@@ -30,7 +30,7 @@ source venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
 pip install -e . # Install the app
-python scripts/reset_db.py # Create and populate the db for the test app "scm"
+python proj/scripts/reset_db.py # Create and populate the db for the test app "scm"
 ```
 Copy env.example to .env and fill in the values for your LLM keys etc.
 
